@@ -1,2 +1,2 @@
 # rattler.io
-Easy C++ optional framework for interface coding
+Easy C++ optional framework for interface implementation
