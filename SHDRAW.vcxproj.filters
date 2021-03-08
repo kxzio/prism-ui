@@ -1,0 +1,102 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="source">
+      <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
+      <Extensions>cpp;c;cc;cxx;c++;cppm;ixx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
+    </Filter>
+    <Filter Include="examples">
+      <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
+      <Extensions>h;hh;hpp;hxx;h++;hm;inl;inc;ipp;xsd</Extensions>
+    </Filter>
+    <Filter Include="resources">
+      <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
+      <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
+    </Filter>
+    <Filter Include="source\render">
+      <UniqueIdentifier>{02fc8e93-7c75-4a87-86fe-f123816453ed}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="fnv1a.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
+    <ClCompile Include="im_manager\imgui.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
+    <ClCompile Include="im_manager\imgui_draw.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
+    <ClCompile Include="im_manager\imgui_impl_dx9.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
+    <ClCompile Include="im_manager\imgui_impl_win32.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
+    <ClCompile Include="im_manager\imgui_tables.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
+    <ClCompile Include="im_manager\imgui_widgets.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
+    <ClCompile Include="gui_init\main.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
+    <ClCompile Include="gui\gui.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="menu.h">
+      <Filter>examples</Filter>
+    </ClInclude>
+    <ClInclude Include="fnv1a.h">
+      <Filter>examples</Filter>
+    </ClInclude>
+    <ClInclude Include="im_manager\imconfig.h">
+      <Filter>examples</Filter>
+    </ClInclude>
+    <ClInclude Include="im_manager\imgui.h">
+      <Filter>examples</Filter>
+    </ClInclude>
+    <ClInclude Include="im_manager\imgui_impl_dx9.h">
+      <Filter>examples</Filter>
+    </ClInclude>
+    <ClInclude Include="im_manager\imgui_impl_win32.h">
+      <Filter>examples</Filter>
+    </ClInclude>
+    <ClInclude Include="im_manager\imgui_internal.h">
+      <Filter>examples</Filter>
+    </ClInclude>
+    <ClInclude Include="im_manager\imstb_rectpack.h">
+      <Filter>examples</Filter>
+    </ClInclude>
+    <ClInclude Include="im_manager\imstb_textedit.h">
+      <Filter>examples</Filter>
+    </ClInclude>
+    <ClInclude Include="im_manager\imstb_truetype.h">
+      <Filter>examples</Filter>
+    </ClInclude>
+    <ClInclude Include="singleton.hpp">
+      <Filter>examples</Filter>
+    </ClInclude>
+    <ClInclude Include="gui_init\window_process.h">
+      <Filter>examples</Filter>
+    </ClInclude>
+    <ClInclude Include="gui_init\finish.h">
+      <Filter>examples</Filter>
+    </ClInclude>
+    <ClInclude Include="gui_init\create.h">
+      <Filter>examples</Filter>
+    </ClInclude>
+    <ClInclude Include="gui_init\included.h">
+      <Filter>examples</Filter>
+    </ClInclude>
+    <ClInclude Include="gui\gui.h">
+      <Filter>examples</Filter>
+    </ClInclude>
+    <ClInclude Include="gui\version.h">
+      <Filter>examples</Filter>
+    </ClInclude>
+  </ItemGroup>
+</Project>
