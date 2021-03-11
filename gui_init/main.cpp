@@ -65,7 +65,7 @@ void menu::init() {
     gui::get().__colorstyle(__style_color::selectable_default) = ImColor(25, 25, 25);
     gui::get().__colorstyle(__style_color::selectable_hovered) = ImColor(30, 30, 30);
     gui::get().__colorstyle(__style_color::selectable_active) = ImColor(35, 35, 35);
-    gui::get().__colorstyle(__style_color::active_obj) = ImColor(255, 0, 138);
+    gui::get().__colorstyle(__style_color::active_obj) = ImColor(15, 186, 224);
     gui::get().__colorstyle(__style_color::unactive_obj) = ImColor(35, 35, 35);
 
     //window
@@ -76,7 +76,7 @@ void menu::init() {
     gui::get().__style(__style_value::item_spacing_y) = 8.f;
 
     //gui solve : 
-    gui::get().begin_frame("Gideon", pos(30, 30), size(585, 430), __flags::none );
+    gui::get().begin_frame("GUI", pos(30, 30), size(585, 430), __flags::none );
     {
         const char* tabs[] {"Home", "Inbox", "Profile", "Settings", "Features"};
         for (int i = 0; i < 5; i++) {

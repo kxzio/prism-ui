@@ -950,14 +950,14 @@ void gui::color_picker(const char* title, float col[4]) {
 	auto get_pos = __brush_pos();
 	auto const transparent_background = true;
 	//size of rect
-	const float frame_size = 16.f;
+	const float frame_size = 15.f;
 	auto const hovered = is_hovered(get_pos, get_pos + pos(frame_size + CalcTextSize(title).x + __style(item_spacing_x), frame_size));
 	//draw
 	dl_data->AddText(get_pos + pos(frame_size + __style(item_spacing_x), 1),  __colorstyle(__style_color::text), title);
 
 	if (transparent_background) {
 
-		dl_data->AddRectFilled(get_pos + pos(0, 1), get_pos + pos(frame_size, frame_size), ImColor(255, 255, 255, 255));
+		dl_data->AddRectFilled(get_pos, get_pos + pos(frame_size, frame_size), ImColor(255, 255, 255, 255));
 		{
 			dl_data->AddRectFilled(get_pos + pos(0, 0), get_pos + pos(0, 0) + pos(5, 5), ImColor(0, 0, 0, 100));
 			dl_data->AddRectFilled(get_pos + pos(10, 0), get_pos + pos(10, 0) + pos(5, 5), ImColor(0, 0, 0, 100));
@@ -971,7 +971,7 @@ void gui::color_picker(const char* title, float col[4]) {
 	}
 
 	//frame
-	dl_data->AddRectFilled(get_pos + pos(0, 1), get_pos + pos(frame_size, frame_size), ImColor(col[0], col[1], col[2], col[3]) );
+	dl_data->AddRectFilled(get_pos, get_pos + pos(frame_size, frame_size), ImColor(col[0], col[1], col[2], col[3]) );
 	//outline
 	dl_data->AddRect(get_pos, get_pos + pos(frame_size, frame_size), __colorstyle(__style_color::element_outline));
 
