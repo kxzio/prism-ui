@@ -5,12 +5,44 @@
 #include <sstream>
 #include "version.h"
 #include <iomanip>
+#include <conio.h>
+#include <stdio.h>
 
 using namespace ImGui;
 
 //handle operation for imgui datatypes
 ImVec2 operator-(const ImVec2& l, const ImVec2& r) { return{ l.x - r.x, l.y - r.y }; }
 ImVec2 operator+(const ImVec2& l, const ImVec2& r) { return{ l.x + r.x, l.y + r.y }; }
+
+const char* const key_names[] = {
+
+	//other :::
+	"Unknown","LM","RM","Cancel","M3","X1 mouse","X2 mouse","Unknown","Back","Tab","Unknown","Unknown","Clear","Return","Unknown","Unknown","Shift","Ctrl","Menu", //19
+	"Pause","Capital","KANA","Unknown","VK_JUNJA","VK_FINAL","VK_KANJI","Unknown","Escape","Convert","NonConvert","Accept","VK_MODECHANGE","Space","Prior",
+	"Next","End","Home","Left","Up","Right","Down","Select","Print","Execute","Snapshot","Insert","Delete","Help", //48
+	//input keys :::
+	"0","1","2","3","4","5","6","7","8","9"," "," "," "," "," "," "," ","a","b","c","d","e",
+	"f","g","h","i","j","k","l","m","n","o","p","q","r","s","t","u","v","w","x","y","z",
+	//other:::
+	"Win left","Win right","Apps","Unknown","Sleep","Numpad 0","Numpad 1","Numpad 2","Numpad 3","Numpad 4",
+	"Numpad 5","Numpad 6","Numpad 7","Numpad 8","Numpad 9","Multiply","Add","Seperator","Subtract","Decimal",
+	"Devide","F1","F2","F3","F4","F5","F6","F7","F8","F9","F10","F11","F12","F13","F14","F15","F16","F17","F18",
+	"F19","F20","F21","F22","F23","F24","Unknown","Unknown","Unknown","Unknown","Unknown","Unknown","Unknown","Unknown",
+	"Numlock","Scroll","VK_OEM_NEC_EQUAL","VK_OEM_FJ_MASSHOU","VK_OEM_FJ_TOUROKU","VK_OEM_FJ_LOYA","VK_OEM_FJ_ROYA","Unknown",
+	"Unknown","Unknown","Unknown","Unknown","Unknown","Unknown","Unknown","Unknown","Shift left","Shift right","Ctrl left",
+	"Ctrl right","Left menu","Right menu"
+};
+
+const char* const other_key_names[] = {
+	//48 + 
+	")","!","@","#","$","%","^","&","*","(", "~", "_", "+", "{", "}", ":", "|", "<", ">", "?"
+};
+char change_case(char c) {
+	if (std::isupper(c))
+		return std::tolower(c);
+	else
+		return std::toupper(c);
+}
 
 //window handle data function : 
 void gui::think(c_window_form* __this, int flags) {
@@ -56,7 +88,6 @@ void gui::think(c_window_form* __this, int flags) {
 	//add to library new object
 	this->old_window_manifold.push_back(&wform_old);
 
-
 	if (!wform_old.lock_menu) {
 		//move RECT by mouse event dx
 		if (move_rect_by_mouse(__this->name_str, &vpos->second, size(pos_settings.size.x, 30))) {
@@ -84,11 +115,34 @@ void gui::think(c_window_form* __this, int flags) {
 	//debug background
 	dl_data->AddRectFilled(pos_settings.pos, pos_settings.pos + pos_settings.size, !is_child ? __colorstyle(__style_color::window_background) : __colorstyle(__style_color::childwindow_bg), 0.0);
 
+	//get current lib data
+	auto dt = get_current_manifold_lib();
+	// nya
+	if (is_hovered(dt->pos, dt->pos + get_pos_settings()->size)) {
+		last_hovered_window = id;
+	}
+
 	//draw titlebar, etc
 	draw_window_features();
 
 	// fix 05.03 old_window form rebuild
 	wform_old = wform_full;
+	
+	//get keyboard input 
+	auto i_input = _getch();
+
+	//dt of id
+	static std::map<gui_id, int> last_scroll_map;
+	//get itp for checking
+	auto last_scroll = last_scroll_map.find(id); // current itp
+	//contract 
+	if (last_scroll == last_scroll_map.end()) {
+		last_scroll_map.insert({ id, global_mouse_scroll });
+		//insert perfect id
+		last_scroll = last_scroll_map.find(id);
+		// find id
+	}
+
 
 	#if DEBUG 
 	{
@@ -111,6 +165,8 @@ void gui::think(c_window_form* __this, int flags) {
 		this->add_window_debug_log((std::stringstream{} << "global_scroll" << std::to_string(global_mouse_scroll / 120)).str());
 		//name and etc
 		this->add_window_debug_log((std::stringstream{} << "my scroll" << std::to_string(wform_full.scroll_offset )).str());
+		//show
+		this->add_window_debug_log(std::to_string(i_input));
 
 	}
 	#endif 
@@ -194,6 +250,7 @@ void gui::go() {
 	this->old_window_manifold.clear();
 	//combo/multi click abl
 	this->is_able_to_click = true;
+	this->last_hovered_window = NULL;
 }
 
 void gui::offset_brush_pos(pos p) {
@@ -219,15 +276,15 @@ bool gui::is_hovered(pos p1, pos p2) {
 }
 
 //is mouse hovering custom rect by pos
-bool gui::is_clicked_once() {
+bool gui::is_clicked_once(int i) {
 	//combat
-	return GetIO().MouseClicked[0];
+	return GetIO().MouseClicked[i];
 }
 
 //is mouse hovering custom rect by pos
-bool gui::is_holding() {
+bool gui::is_holding(int i) {
 	//combat
-	return GetIO().MouseDown[0];
+	return GetIO().MouseDown[i];
 }
 
 void gui::begin_frame(std::string __strname, pos start_pos, size start_size, int flags) {
@@ -644,6 +701,8 @@ void gui::combo(const char* title, int* element, const char** text_array, int ar
 			auto const calc_current_char = CalcTextSize(current_char);
 			auto const selectable_color = i == *element ? __colorstyle(__style_color::selectable_active) : hovered ? __colorstyle(__style_color::selectable_hovered) : __colorstyle(__style_color::selectable_default);
 			overlay->AddRectFilled(frame_rect_now, frame_rect_now + pos(w, h), selectable_color );
+			if (i == *element)
+				overlay->AddRectFilled(frame_rect_now, frame_rect_now + pos(1, h), __colorstyle(__style_color::active_obj));
 			overlay->AddText(frame_rect_now + pos(4.5, (h / 2) - calc_current_char.y / 2), __colorstyle(__style_color::text), current_char);
 			//combat
 			if (hovered && is_clicked_once()) {
@@ -731,12 +790,14 @@ void gui::multi(const char* title, bool elements[], const char** text_array, int
 		for (int i = 0; i < arr_sz; i++) {
 
 			auto const frame_rect_now = pos(popup_pos + pos(0, h * i));
-			auto const hovered{ is_hovered(frame_rect_now, frame_rect_now + pos(w, h + offset_element)) };
+			auto const hovered{ is_hovered(frame_rect_now, frame_rect_now + pos(w, h)) };
 			auto const current_char = text_array[i];
 			auto const calc_current_char = CalcTextSize(current_char);
 			auto const selectable_color = elements[i] ? __colorstyle(__style_color::selectable_active) : hovered ? __colorstyle(__style_color::selectable_hovered) : __colorstyle(__style_color::selectable_default);
 			overlay->AddRectFilled(frame_rect_now, frame_rect_now + pos(w, h), selectable_color);
-			overlay->AddText(frame_rect_now + pos(4.5, (h / 2) - calc_current_char.y / 2), __colorstyle(__style_color::text), current_char);
+			if (elements[i])
+				overlay->AddRectFilled(frame_rect_now, frame_rect_now + pos(1, h), __colorstyle(__style_color::active_obj));
+			overlay->AddText(frame_rect_now + pos(4.5, (h / 2) - calc_current_char.y / 1.85), __colorstyle(__style_color::text), current_char);
 			//combat
 			if (hovered && is_clicked_once()) 
 				elements[i] = !elements[i];
@@ -782,6 +843,8 @@ bool gui::button(const char* label, size ssize) {
 
 	return p;
 }
+
+
 void gui::custom_slider(const char* title, float* val, float maximal, pos p) {
 
 	auto dl_data = ImGui::GetOverlayDrawList();
@@ -861,12 +924,12 @@ void gui::custom_slider(const char* title, float* val, float maximal, pos p) {
 	//update cursor position
 	GetCursorPos(&cursor);
 
-	if (hovered && is_holding() && this->is_able_to_click) {
+	if (hovered && is_holding()) {
 		*val = std::clamp(((cursor.y - frame_draw_pos.y) / (float(h) / float(maximal))), 0.f, float(maximal));
 		sliderway1->second = true;
 		window_data->lock_menu = true;
 	}
-	else if (is_holding() && sliderway1->second && this->is_able_to_click) {
+	else if (is_holding() && sliderway1->second) {
 		*val = std::clamp(((cursor.y - frame_draw_pos.y) / (float(h) / float(maximal))), 0.f, float(maximal));
 		sliderway2->second = true;
 	}
@@ -875,6 +938,7 @@ void gui::custom_slider(const char* title, float* val, float maximal, pos p) {
 	}
 
 }
+
 void gui::color_picker(const char* title, float col[4]) {
 
 	auto dl_data = ImGui::Oblivion();
@@ -952,6 +1016,8 @@ void gui::color_picker(const char* title, float col[4]) {
 		}
 
 		if (is_opened->second) {
+
+			this->is_able_to_click = false;
 
 			static std::map<gui_id, float> old_hue_map;
 			auto old_hue = old_hue_map.find(id);
@@ -1085,7 +1151,339 @@ void gui::color_picker(const char* title, float col[4]) {
 	}
 
 
-
-
 	add_element(pos(0, frame_size));
+}
+
+void gui::list(const char* title, int* element, const char* text[], int count) {
+
+	auto dl_data = ImGui::Oblivion();
+	auto window_data = get_current_manifold_lib();
+	auto pos_settings = get_pos_settings();
+	auto get_pos = __brush_pos();
+	auto const h = 20.f;
+	auto const w = calc_frame_w();
+	auto const frame_pos  = pos(get_pos.x, get_pos.y + CalcTextSize(title).y + __style(__style_value::item_spacing_y));
+	auto const frame_size = size(w, (count + 1) * h);
+	dl_data->AddRectFilled(frame_pos, frame_pos + frame_size, __colorstyle(frame_default));
+	dl_data->AddRect(frame_pos, frame_pos + frame_size, __colorstyle(__style_color::element_outline));
+	dl_data->AddText(get_pos, __colorstyle(__style_color::text), title);
+	for (int i = 0; i < count; i++) {
+		auto const frame_rect_now = pos(frame_pos + pos(1, h * i + 1));
+		auto const hovered { is_hovered(frame_rect_now, frame_rect_now + pos(w, h)) };
+		auto const current_char = text[i];
+		auto const calc_current_char = CalcTextSize(current_char);
+		auto const selectable_color = *element == i ? __colorstyle(__style_color::selectable_active) : hovered ? __colorstyle(__style_color::selectable_hovered) : __colorstyle(__style_color::selectable_default);
+		dl_data->AddRectFilled(frame_rect_now, frame_rect_now + pos(w - 2, h - 1), selectable_color);
+		if (*element == i)
+			dl_data->AddRectFilled(frame_rect_now, frame_rect_now + pos(1, h - 1), __colorstyle(__style_color::active_obj));
+		dl_data->AddText(frame_rect_now + pos(4.5, (h / 2) - calc_current_char.y / 1.85), __colorstyle(__style_color::text), current_char);
+		//combat
+		if (hovered && is_clicked_once() && this->is_able_to_click)
+			*element = i;
+	}
+	add_element(frame_size + pos(0, h));
+
+}
+
+void gui::input(const char* title, std::string& input) {
+
+	auto dl_data = ImGui::Oblivion();
+	auto window_data = get_current_manifold_lib();
+	auto const pos_settings = get_pos_settings();
+	auto const get_pos = __brush_pos();
+	const auto w = calc_frame_w();
+	const auto h = CalcTextSize(title).y * 1.5;
+	auto const frame_pos = pos(get_pos.x, get_pos.y + CalcTextSize(title).y +__style(__style_value::item_spacing_y));
+	auto const frame_size = size(w, h);
+	auto const hovered = is_hovered(frame_pos, frame_pos + frame_size);
+
+	auto const id = get_propper_id(title);
+	//get itp for checking
+	static std::map<gui_id, bool> is_opened_map;
+	//animation
+	static std::map<gui_id, int> blicking_map;
+	//anim switch
+	static std::map<gui_id, int> blicking_map_second;
+	auto is_ready_to_input = is_opened_map.find(id);
+	// current itp
+	if (is_ready_to_input == is_opened_map.end()) {
+		is_opened_map.insert({ id, false });
+		//insert perfect id
+		is_ready_to_input = is_opened_map.find(id);
+		// find id
+	}
+
+	auto blicking = blicking_map.find(id);
+	// current itp
+	if (blicking == blicking_map.end()) {
+		blicking_map.insert({ id, 0.0f });
+		//insert perfect id
+		blicking = blicking_map.find(id);
+		// find id
+	}
+
+	auto switch_anim = blicking_map_second.find(id);
+	// current itp
+	if (switch_anim == blicking_map_second.end()) {
+		blicking_map_second.insert({ id, 0.0f });
+		//insert perfect id
+		switch_anim = blicking_map_second.find(id);
+		// find id
+	}
+
+	//set active id
+	if (hovered && is_clicked_once() && this->is_able_to_click)
+		is_ready_to_input->second = true;
+	else if (!hovered && is_clicked_once() && this->is_able_to_click)
+		is_ready_to_input->second = false;
+
+	blicking->second++;
+	if (blicking->second % 50 == 0)
+		switch_anim->second = !switch_anim->second;
+
+	//uniform
+	dl_data->AddText(get_pos, __colorstyle(__style_color::text), title);
+	dl_data->AddRectFilled(frame_pos, frame_pos + frame_size, get_frame_color(hovered, is_ready_to_input->second));
+	dl_data->AddRect(frame_pos, frame_pos + frame_size, __colorstyle(__style_color::element_outline));
+	//pos
+	pos converted_cursor_pos;
+	converted_cursor_pos = frame_pos + pos(5 + CalcTextSize(input.c_str()).x + 1, 4);
+	//draw cursor
+	if (is_ready_to_input->second)
+		dl_data->AddRect(converted_cursor_pos, converted_cursor_pos + size(1, h - 7), ImColor(255, 255, 255, switch_anim->second ? 255 : 0));
+
+	//check keys state
+	for (int i = 0; i < 255; i++) {
+		//check input validation
+		if ((i > 47 && i < 91) || i == 190) {
+			const bool valid  = CalcTextSize(input.c_str()).x < w - 8;
+			const bool upcase = GetKeyState(VK_CAPITAL) || GetAsyncKeyState(VK_SHIFT);
+			//delete last char
+			if (GetAsyncKeyState(VK_BACK) & 1 && input.length() > 0) {
+				//check, if can we try to edit text
+				if (is_ready_to_input->second) 
+					input.erase(input.length() - 1, 1);
+			}
+			else if (GetAsyncKeyState(189) & 1) {
+				if (is_ready_to_input->second && valid) {
+					if (upcase) input += "_";
+					else		input += "-";
+				}
+			}
+			else if (GetAsyncKeyState(190) & 1) {
+				if (is_ready_to_input->second && valid)
+					input += ".";
+			}
+			//do skip
+			else if (GetAsyncKeyState(VK_SPACE) & 1) {
+				if (is_ready_to_input->second && valid)
+				input += " ";
+			}
+			//get click state
+			else if (GetAsyncKeyState(i) & 1) {
+				std::string tmp = key_names[i];
+				//check capslock activity, shift
+				if (upcase) { 
+					if (i >= 48 && i <= 57) 
+						tmp = other_key_names[i - 48];
+					else std::transform(tmp.begin(), tmp.end(), tmp.begin(), change_case); 
+				} 
+				//add
+				if (is_ready_to_input->second && valid)
+					input += tmp;
+			}
+			
+		}
+	}
+
+
+	dl_data->AddText(frame_pos + pos(4.5, h / 2 - 1 - CalcTextSize(input.c_str()).y / 2), __colorstyle(__style_color::text), input.c_str());
+
+	add_element(frame_size + pos(0, CalcTextSize(title).y + __style(__style_value::item_spacing_y)));
+}
+
+void gui::text_box(const char* title, const char* text[], int count) {
+
+	auto dl_data = ImGui::Oblivion();
+	auto window_data = get_current_manifold_lib();
+	auto const pos_settings = get_pos_settings();
+	auto const get_pos = __brush_pos();
+	const auto w = calc_frame_w();
+	const auto h = ((CalcTextSize(text[0]).y) * count) + (4.5 * 2);
+	auto const frame_pos = pos(get_pos.x, get_pos.y + CalcTextSize(title).y + __style(__style_value::item_spacing_y));
+	auto const frame_size = size(w, h);
+	auto const hovered = is_hovered(frame_pos, frame_pos + frame_size);
+
+	//uniform
+	dl_data->AddText(get_pos, __colorstyle(__style_color::text), title);
+	dl_data->AddRectFilled(frame_pos, frame_pos + frame_size, __colorstyle(__style_color::frame_default));
+	dl_data->AddRect(frame_pos, frame_pos + frame_size, __colorstyle(__style_color::element_outline));
+
+	for (auto i = 0; i < count; i++)
+		dl_data->AddText(frame_pos + pos(4.5, 4.5 + (CalcTextSize(text[i]).y * i)), __colorstyle(__style_color::text), text[i]);
+
+	add_element(frame_size + pos(0, CalcTextSize(title).y + __style(__style_value::item_spacing_y)));
+}
+
+bool gui::toggle_button(const char* label, bool* v, size ssize) {
+
+	//tmp
+	bool p = false;
+
+	auto dl_data = ImGui::Oblivion();
+	auto window_data = get_current_manifold_lib();
+	auto pos_settings = get_pos_settings();
+	auto get_pos = __brush_pos();
+
+	//combat
+	size frame_size{ ssize };
+	if (ssize.x == 0 && ssize.y == 0) 
+		frame_size = size(calc_frame_w(), CalcTextSize(label).y * 1.5);
+	
+	//draw
+	auto const hovered = is_hovered(get_pos, get_pos + frame_size);
+	dl_data->AddRect(get_pos, get_pos + frame_size, *v ? __colorstyle(__style_color::active_obj) : __colorstyle(__style_color::unactive_obj));
+	dl_data->AddText(get_pos + pos((frame_size.x / 2) - CalcTextSize(label).x / 2, frame_size.y / 2) - pos(0, CalcTextSize(label).y / 2), *v ? __colorstyle(__style_color::text) : __colorstyle(__style_color::permissible_text), label);
+
+	if (hovered && is_clicked_once() && this->is_able_to_click) 
+	{
+		p = true; 
+		*v = !(*v);
+	}
+
+	add_element(frame_size);
+
+	return p;
+}
+void gui::hotkey(const char* title, int* key, int* mode) {
+
+	auto dl_data = ImGui::Oblivion();
+	auto window_data = get_current_manifold_lib();
+	auto pos_settings = get_pos_settings();
+	auto get_pos = __brush_pos();
+	auto overlay = GetOverlayDrawList();
+
+	//size of rect
+	const float h = 20, w = calc_frame_w();
+	//draw
+	dl_data->AddText(get_pos, __colorstyle(__style_color::text), title);
+
+	const pos frame_draw_pos = pos(get_pos.x, get_pos.y + CalcTextSize(title).y + __style(item_spacing_y));
+	auto const hovered = is_hovered(frame_draw_pos, frame_draw_pos + pos(w, h));
+	auto const prew_size = CalcTextSize(title);
+	dl_data->AddRectFilled(frame_draw_pos, frame_draw_pos + pos(w, h), get_frame_color(hovered, hovered && is_holding()));
+	dl_data->AddRect(frame_draw_pos, frame_draw_pos + pos(w, h), __colorstyle(__style_color::element_outline));
+
+	auto const id = get_propper_id(title);
+	//get itp for checking
+	static std::map<gui_id, bool> is_opened_map;
+	//animation
+	auto is_ready_to_input = is_opened_map.find(id);
+	// current itp
+	if (is_ready_to_input == is_opened_map.end()) {
+		is_opened_map.insert({ id, false });
+		//insert perfect id
+		is_ready_to_input = is_opened_map.find(id);
+		// find id
+	}
+
+	static std::map<gui_id, bool> opened_popup_map;
+	//animation
+	auto is_opened_popup = opened_popup_map.find(id);
+	// current itp
+	if (is_opened_popup == opened_popup_map.end()) {
+		opened_popup_map.insert({ id, false });
+		//insert perfect id
+		is_opened_popup = opened_popup_map.find(id);
+		// find id
+	}
+
+	static std::map<gui_id, pos> cursor_map;
+	//animation
+	auto cursor_updated = cursor_map.find(id);
+	// current itp
+	if (cursor_updated == cursor_map.end()) {
+		cursor_map.insert({ id, pos(cursor.x, cursor.y)});
+		//insert perfect id
+		cursor_updated = cursor_map.find(id);
+		// find id
+	}
+
+	//get itp for checking
+	static std::map<gui_id, std::string> tmp_str;
+	//animation
+	auto tmp_str_input = tmp_str.find(id);
+	// current itp
+	if (tmp_str_input == tmp_str.end()) {
+		tmp_str.insert({ id, "None" });
+		//insert perfect id
+		tmp_str_input = tmp_str.find(id);
+		// find id
+	}
+
+	std::string tmp_key_str = "None";
+
+	//active
+	if (hovered && is_clicked_once() && this->is_able_to_click) {
+		is_ready_to_input->second = !is_ready_to_input->second;
+		//set input
+	}
+	//is_opened_popup
+	if (hovered && is_clicked_once(1) && this->is_able_to_click) {
+		//right click
+		cursor_updated->second = pos(cursor.x, cursor.y);
+		is_opened_popup->second = !is_opened_popup->second;
+	}
+
+	for (int i = 0; i < 166; i++) {
+		//check all states
+		int key_state = GetAsyncKeyState(i);
+		if (is_ready_to_input->second) {
+			//ready
+			if (key_state && !is_holding() && !is_holding(1)) {
+				//set new one key 
+				*key = i;
+				tmp_str_input->second = key_names[i];
+				//set new one txt
+				is_ready_to_input->second = false;
+			}
+		}
+	}
+
+	dl_data->AddText(frame_draw_pos + pos(4.5, h / 2 - 1 - prew_size.y / 2), is_ready_to_input->second ? __colorstyle(__style_color::active_obj) : __colorstyle(__style_color::text), tmp_str_input->second.c_str());
+
+	const char* modes[]{ "Toggle", "Hold" };
+	auto const  oldpopuppos = frame_draw_pos + pos(10, 10);
+	pos popup_pos = frame_draw_pos + pos(cursor_updated->second.x - frame_draw_pos.x, cursor_updated->second.y - frame_draw_pos.y);
+	auto const  popup_size = size((CalcTextSize(modes[0]).x + __style(item_spacing_x)) * 1.1, (CalcTextSize(modes[0]).y + CalcTextSize(modes[1]).y + __style(item_spacing_y)) * 1.1);
+
+	if (is_opened_popup->second) {
+
+		this->is_able_to_click = false;
+		//create selection popup
+		overlay->AddRectFilled(popup_pos, popup_pos + popup_size, ImColor(__colorstyle(__style_color::frame_default).Value.x, __colorstyle(__style_color::frame_default).Value.y, __colorstyle(__style_color::frame_default).Value.z, 0.75f));
+		overlay->AddRect(popup_pos, popup_pos + popup_size, __colorstyle(__style_color::element_outline));
+		//text
+		overlay->AddText(popup_pos + pos(__style(item_spacing_x) / 2, __style(item_spacing_y) / 2), *mode == 0 ? __colorstyle(__style_color::active_obj) : __colorstyle(__style_color::text), modes[0]);
+		overlay->AddText(popup_pos + pos(__style(item_spacing_x) / 2, __style(item_spacing_y) / 2 + CalcTextSize(modes[0]).y + 2), *mode == 1 ? __colorstyle(__style_color::active_obj) : __colorstyle(__style_color::text), modes[1]);
+		//mode 1
+		const bool hovered_mode1 = is_hovered(popup_pos + pos(__style(item_spacing_x) / 2,
+			__style(item_spacing_y) / 2), popup_pos + pos(__style(item_spacing_x) / 2, __style(item_spacing_y) / 2) + pos(CalcTextSize(modes[0]).x + 2, CalcTextSize(modes[0]).y + 2));
+		//mode 2
+		const bool hovered_mode2 = is_hovered(popup_pos + pos(__style(item_spacing_x) / 2, __style(item_spacing_y) / 2 + CalcTextSize(modes[0]).y + 2),
+			popup_pos + pos(__style(item_spacing_x) / 2, __style(item_spacing_y) / 2 + CalcTextSize(modes[1]).y + 2) + pos(CalcTextSize(modes[1]).x + 2, CalcTextSize(modes[1]).y + 2));
+
+		if (hovered_mode1 && is_clicked_once()) {
+			*mode = 0;
+			is_opened_popup->second = false;
+		}
+		else if (hovered_mode2 && is_clicked_once()) {
+			*mode = 1;
+			is_opened_popup->second = false;
+		}
+	}
+
+	if (!hovered && is_holding(0) && !is_hovered(popup_pos, popup_pos + popup_size)) {
+		is_opened_popup->second = false;
+	}
 }

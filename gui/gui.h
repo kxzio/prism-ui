@@ -56,6 +56,7 @@ enum __style_color : int
 {
 	text,
 	permissible_text,
+	unactive_obj,
 	active_obj,
 	selectable_default,
 	selectable_hovered,
@@ -155,6 +156,11 @@ class gui : public singleton < gui > {
 	bool button(const char* label, size size = pos(0, 0));
 	void color_picker(const char* title, float col[4]);
 	void custom_slider(const char* title, float* val, float maximal, pos p);
+	void list(const char* title, int* element, const char* text[], int count);
+	void input(const char* title, std::string& input);
+	void text_box(const char* title, const char* text[], int count);
+	bool toggle_button(const char* label, bool* v, size ssize = pos(0, 0));
+	void hotkey(const char* title, int* key, int* mode);
 
 	private:
 	//window data of size and pos
@@ -163,20 +169,21 @@ class gui : public singleton < gui > {
 	public:
 	//window size, pos
 	void set_window_config(pos p1, pos p2);
-	
+	gui_id last_hovered_window;
+	//window, that is focused now
+	gui_id focus_target_id;
+
+	std::vector < c_internal_window_form* > window_manifold;
 	//internal window functions
 	private :
 	//global brush position
 	pos brush_pos = pos(0, 0);
 	//whole window counter to finaly draw
-	std::vector < c_internal_window_form* > window_manifold;
 	//old data of inversed tick_count
 	std::vector < c_internal_window_form* > old_window_manifold;
 	std::vector <pos> window_poses ;
 	//window, that is dragging rn
 	gui_id drag_target_id;
-	//window, that is focused now
-	gui_id focus_target_id;
 	//bool to dont clear target
 	bool dont_restore_drag_target;
 	//fix random button clicks
@@ -186,9 +193,9 @@ class gui : public singleton < gui > {
 	//is mouse hovering rect
 	bool is_hovered(pos p1, pos p2);
 	//is left button clicked one time?
-	bool is_clicked_once();
+	bool is_clicked_once(int i = 0);
 	//is left button down?
-	bool is_holding();
+	bool is_holding(int i = 0);
 	//focus window
 	void focus_handle(gui_id id);
 	//for window dragg
@@ -211,4 +218,5 @@ class gui : public singleton < gui > {
 	float calc_frame_w();
 	//get frame color
 	ImColor get_frame_color(bool hovered, bool active);
+
 };

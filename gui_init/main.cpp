@@ -55,8 +55,8 @@ void menu::init() {
     gui::get().__colorstyle(__style_color::window_background) = ImColor(20, 20, 20);
     gui::get().__colorstyle(__style_color::childwindow_bg) = ImColor(24, 24, 24);
     gui::get().__colorstyle(__style_color::titlebar_background) = ImColor(30, 30, 30);
-    gui::get().__colorstyle(__style_color::window_oultine) = ImColor(60, 60, 60, 100);
-    gui::get().__colorstyle(__style_color::element_outline) = ImColor(60, 60, 60, 100);
+    gui::get().__colorstyle(__style_color::window_oultine) = ImColor(60, 60, 60, 38);
+    gui::get().__colorstyle(__style_color::element_outline) = ImColor(60, 60, 60, 38);
     //elements
     gui::get().__colorstyle(__style_color::frame_default) = ImColor(30, 30, 30);
     gui::get().__colorstyle(__style_color::frame_hovered) = ImColor(35, 35, 35);
@@ -65,7 +65,8 @@ void menu::init() {
     gui::get().__colorstyle(__style_color::selectable_default) = ImColor(25, 25, 25);
     gui::get().__colorstyle(__style_color::selectable_hovered) = ImColor(30, 30, 30);
     gui::get().__colorstyle(__style_color::selectable_active) = ImColor(35, 35, 35);
-    gui::get().__colorstyle(__style_color::active_obj) = ImColor(255, 126, 0);
+    gui::get().__colorstyle(__style_color::active_obj) = ImColor(255, 0, 138);
+    gui::get().__colorstyle(__style_color::unactive_obj) = ImColor(35, 35, 35);
 
     //window
     gui::get().__style(__style_value::window_padding_x) = 8.f;
@@ -75,7 +76,7 @@ void menu::init() {
     gui::get().__style(__style_value::item_spacing_y) = 8.f;
 
     //gui solve : 
-    gui::get().begin_frame("GUI Menu", pos(30, 30), size(585, 430), __flags::none );
+    gui::get().begin_frame("Gideon", pos(30, 30), size(585, 430), __flags::none );
     {
         const char* tabs[] {"Home", "Inbox", "Profile", "Settings", "Features"};
         for (int i = 0; i < 5; i++) {
@@ -120,6 +121,11 @@ void menu::init() {
             const char* combo_text_[]{ "Selection1", "Selection2", "Selection3" };
             gui::get().multi("Multibox selection", multibox_test, combo_text_, ARRAYSIZE(combo_text_));
 
+            static std::string input;
+            gui::get().input("Text input", input);
+
+            static bool bln2 = false;
+            gui::get().checkbox("Another checkbox", &bln2);
 
         }
         gui::get().end();
@@ -128,7 +134,23 @@ void menu::init() {
         gui::get().offset_brush_pos(pos(75 + 162 * 2, 50));
         gui::get().begin_child_window("Conditions", size(162, 323));
         {
+            static int list_element;
+            const char* list_text[]{ "Selection1", "Selection2", "Selection3"};
+            gui::get().list("Listbox", &list_element, list_text, ARRAYSIZE(list_text));
 
+            const char* textbox[] 
+            { 
+                "Hello, it is textbox", 
+                "It is text in frame",
+                "You may use textbox -",
+                "1.Pay attention of user",
+                "2.Just share info"
+            };
+            gui::get().text_box("Textbox", textbox, ARRAYSIZE(textbox));
+            static bool v;
+            gui::get().toggle_button("Toggle button", &v, size(95, 30));
+            static int key, mode;
+            gui::get().hotkey("Hotkey", &key, &mode);
         }
         gui::get().end();
 
