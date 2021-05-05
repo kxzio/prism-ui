@@ -2180,6 +2180,7 @@ struct ImColor
     inline void    SetHSV(float h, float s, float v, float a = 1.0f) { ImGui::ColorConvertHSVtoRGB(h, s, v, Value.x, Value.y, Value.z); Value.w = a; }
     static ImColor HSV(float h, float s, float v, float a = 1.0f) { float r, g, b; ImGui::ColorConvertHSVtoRGB(h, s, v, r, g, b); return ImColor(r, g, b, a); }
     ImVec4 GetHSV(float r, float g, float b, float a = 1.0f) { float h, s, v; ImGui::ColorConvertRGBtoHSV(r, g, b, h, s, v); return ImVec4(h, s, v, a); }
+    void EditAlpha(int a) { Value.w = a / 255.f; }
 };
 
 //-----------------------------------------------------------------------------

@@ -11,6 +11,7 @@ public:
 	void init();
 	ImFont* my_font;
 	HDC hDCScreen;
+	HWND hWnd;
 
 };
 

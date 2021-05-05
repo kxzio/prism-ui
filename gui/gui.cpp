@@ -3,6 +3,7 @@
 #include <map>
 #include <iostream>
 #include <sstream>
+#include <algorithm>
 #include "version.h"
 #include <iomanip>
 #include <conio.h>
@@ -270,7 +271,8 @@ void gui::set_window_config(pos p1, pos p2) {
 }
 
 //is mouse hovering custom rect by pos
-bool gui::is_hovered(pos p1, pos p2) {
+bool gui::is_hovered(pos p1, pos p2, bool popup_status) {
+
 	//combat
 	return IsMouseHoveringRect(p1, p2, false);
 }
@@ -429,6 +431,58 @@ bool gui::move_rect_by_mouse(std::string buf_name, pos* p1, size p2) {
 
 
 }
+
+float gui::lerp_animate(const char* label, const char* second_label, bool if_, float Maximal_, float Speed_, int type) {
+
+	auto ID = ImGui::GetID((std::stringstream{} << label << second_label).str().c_str());
+
+	static std::map<ImGuiID, float> pValue;
+
+	auto ItPLibrary = pValue.find(ID);
+
+	if (ItPLibrary == pValue.end()) 
+	{
+		pValue.insert({ ID, 0.f });
+		ItPLibrary = pValue.find(ID);
+	}
+
+	const float FrameRateBasedSpeed = Speed_ * (1.f - ImGui::GetIO().DeltaTime);
+
+	switch (type) {
+
+		case DYNAMIC: {
+			if (if_) //do
+				ItPLibrary->second += abs(Maximal_ - ItPLibrary->second) / FrameRateBasedSpeed;
+			else
+				ItPLibrary->second -= (0 + ItPLibrary->second) / FrameRateBasedSpeed;
+		}
+		break;
+
+		case INTERP: {
+			ItPLibrary->second += (Maximal_ - ItPLibrary->second) / FrameRateBasedSpeed;
+		}
+		break;
+
+		case STATIC: {
+			if (if_) //do
+				ItPLibrary->second += FrameRateBasedSpeed;
+			else
+				ItPLibrary->second -= FrameRateBasedSpeed;
+		}
+		break;
+	}
+
+	if (type != INTERP) {
+		//clamp
+		if (ItPLibrary->second > Maximal_)
+		ItPLibrary->second = Maximal_;
+		else if (ItPLibrary->second < 0)
+		ItPLibrary->second = 0;
+	}
+
+	return ItPLibrary->second;
+
+}
 ImColor gui::get_frame_color(bool hovered, bool active) {
 
 	if (active)
@@ -439,6 +493,7 @@ ImColor gui::get_frame_color(bool hovered, bool active) {
 
 	return __colorstyle(__style_color::frame_default);
 }
+
 void gui::end() {
 	this->window_manifold.pop_back();
 	this->old_window_manifold.pop_back();
@@ -477,7 +532,15 @@ void gui::checkbox(const char* __char, bool* __bool) {
 	//draw
 	dl_data->AddText(get_pos + pos(frame_size + __style(item_spacing_x), 1), *__bool ? __colorstyle(__style_color::text) : __colorstyle(__style_color::permissible_text), __char);
 	//frame
-	dl_data->AddRectFilled(get_pos + pos(0, 1), get_pos + pos(frame_size, frame_size), *__bool ? __colorstyle(__style_color::active_obj) : get_frame_color(hovered, hovered && is_holding()));
+	int animated_alpha = lerp_animate(__char, "activated_frame", *__bool, 255, 18, STATIC);
+	{
+		ImColor active_color (__colorstyle(__style_color::active_obj));
+		active_color.EditAlpha(animated_alpha);
+		//default
+		dl_data->AddRectFilled(get_pos + pos(0, 1), get_pos + pos(frame_size, frame_size), get_frame_color(hovered));
+		//active
+		dl_data->AddRectFilled(get_pos + pos(0, 1), get_pos + pos(frame_size, frame_size), active_color);
+	}
 	//outline
 	dl_data->AddRect(get_pos, get_pos + pos(frame_size, frame_size), __colorstyle(__style_color::element_outline));
 
@@ -485,10 +548,9 @@ void gui::checkbox(const char* __char, bool* __bool) {
 	if (is_clicked_once() && hovered && this->is_able_to_click)
 		*__bool = !(*__bool);
 
-	if (*__bool) {
-		const float pad = ImMax(1.0f, IM_FLOOR(frame_size / 4.0f));
-		RenderCheckMark(dl_data, get_pos + ImVec2(pad, pad), ImColor(255, 255, 255), frame_size - pad * 2.0f);
-	}
+	const float pad = ImMax(1.0f, IM_FLOOR((frame_size / 4.0f))) * (animated_alpha / 280.f);
+	RenderCheckMark(dl_data, get_pos + ImVec2(pad, pad), ImColor(255, 255, 255, animated_alpha), (frame_size - (pad * 2.0f) ));
+	
 
 	add_element(pos(0, frame_size));
 }
@@ -656,7 +718,7 @@ void gui::combo(const char* title, int* element, const char** text_array, int ar
 	dl_data->AddText(get_pos, __colorstyle(__style_color::text), title);
 
 	const pos frame_draw_pos = pos(get_pos.x, get_pos.y + CalcTextSize(title).y + __style(item_spacing_y));
-	auto const hovered = is_hovered(frame_draw_pos, frame_draw_pos + pos(w, h));
+	auto const hovered = is_hovered(frame_draw_pos, frame_draw_pos + pos(w, h), this->is_able_to_click);
 	auto const prew_size = CalcTextSize(text_array[*element]);
 	dl_data->AddRectFilled(frame_draw_pos, frame_draw_pos + pos(w, h), get_frame_color(hovered, hovered && is_holding()));
 	dl_data->AddRect(frame_draw_pos, frame_draw_pos + pos(w, h), __colorstyle(__style_color::element_outline));
@@ -1078,30 +1140,20 @@ void gui::color_picker(const char* title, float col[4]) {
 
 			if (is_hovered(inside_pos, inside_pos + pos(inside_size.x - 8 - off_bars_distance, inside_size.y - 8))) {
 
-				//change
-				GetCursorPos(&cursor);
-
 				if (is_holding()) {
 
 					read = true;
 
 					//get oldest screen dc
-					HDC screenDC = GetDC(0);
-
-					//update memory DC, descriptor of the target device context
-					HDC memDC = CreateCompatibleDC(screenDC);
-
-					//create memory bitmap
-					HBITMAP memBm = CreateCompatibleBitmap(screenDC, cursor.x - 1, cursor.y - 1);
-
-					//restore memory bitmap and current memory DC
-					HBITMAP oldBm = (HBITMAP)SelectObject(memDC, memBm);
+					HDC screenDC = GetDC(menu::get().hWnd);
 
 					//get bit, use descriptor memory DC
 					//BitBlt(memDC, 0, 0, 2, 2, screenDC, cursor.x - 1, cursor.y - 1, SRCCOPY);
 
-
 					//get color, that we got from the bitblt origin
+
+					//change
+					GetCursorPos(&cursor);
 
 					auto picked_color_from_screen = GetPixel(screenDC, cursor.x, cursor.y);
 					
@@ -1119,12 +1171,11 @@ void gui::color_picker(const char* title, float col[4]) {
 					*/
 
 					//update color if imgui element, using colorref converted data
-					pickercolor.Value.x = red_picked / 255.f; {
-						//just a bit lose, bit ok
-						pickercolor.Value.y = green_picked / 255.f;
-						pickercolor.Value.z = blue_picked / 255.f;
-					}
-
+					pickercolor.Value.x = red_picked / 255.f; 
+					//just a bit lose, bit ok
+					pickercolor.Value.y = green_picked / 255.f;
+					pickercolor.Value.z = blue_picked / 255.f;
+					
 					old_picker_pos = pos(cursor.x - inside_pos.x, cursor.y - inside_pos.y);
 
 			
@@ -1376,25 +1427,25 @@ void gui::hotkey(const char* title, int* key, int* mode) {
 
 	auto const id = get_propper_id(title);
 	//get itp for checking
-	static std::map<gui_id, bool> is_opened_map;
+	static std::map<gui_id, bool> is_opened_map_hotkey;
 	//animation
-	auto is_ready_to_input = is_opened_map.find(id);
+	auto is_ready_to_input22 = is_opened_map_hotkey.find(id);
 	// current itp
-	if (is_ready_to_input == is_opened_map.end()) {
-		is_opened_map.insert({ id, false });
+	if (is_ready_to_input22 == is_opened_map_hotkey.end()) {
+		is_opened_map_hotkey.insert({ id, false });
 		//insert perfect id
-		is_ready_to_input = is_opened_map.find(id);
+		is_ready_to_input22 = is_opened_map_hotkey.find(id);
 		// find id
 	}
 
-	static std::map<gui_id, bool> opened_popup_map;
+	static std::map<gui_id, bool> opened_popup_map_hotkey;
 	//animation
-	auto is_opened_popup = opened_popup_map.find(id);
+	auto is_opened_popup_hotkey = opened_popup_map_hotkey.find(id);
 	// current itp
-	if (is_opened_popup == opened_popup_map.end()) {
-		opened_popup_map.insert({ id, false });
+	if (is_opened_popup_hotkey == opened_popup_map_hotkey.end()) {
+		opened_popup_map_hotkey.insert({ id, false });
 		//insert perfect id
-		is_opened_popup = opened_popup_map.find(id);
+		is_opened_popup_hotkey = opened_popup_map_hotkey.find(id);
 		// find id
 	}
 
@@ -1425,39 +1476,41 @@ void gui::hotkey(const char* title, int* key, int* mode) {
 
 	//active
 	if (hovered && is_clicked_once() && this->is_able_to_click) {
-		is_ready_to_input->second = !is_ready_to_input->second;
+		is_ready_to_input22->second = !is_ready_to_input22->second;
 		//set input
 	}
 	//is_opened_popup
 	if (hovered && is_clicked_once(1) && this->is_able_to_click) {
 		//right click
 		cursor_updated->second = pos(cursor.x, cursor.y);
-		is_opened_popup->second = !is_opened_popup->second;
+		is_opened_popup_hotkey->second = !is_opened_popup_hotkey->second;
 	}
 
 	for (int i = 0; i < 166; i++) {
 		//check all states
 		int key_state = GetAsyncKeyState(i);
-		if (is_ready_to_input->second) {
+		if (is_ready_to_input22->second) {
 			//ready
 			if (key_state && !is_holding() && !is_holding(1)) {
 				//set new one key 
 				*key = i;
 				tmp_str_input->second = key_names[i];
 				//set new one txt
-				is_ready_to_input->second = false;
+				is_ready_to_input22->second = false;
 			}
 		}
 	}
 
-	dl_data->AddText(frame_draw_pos + pos(4.5, h / 2 - 1 - prew_size.y / 2), is_ready_to_input->second ? __colorstyle(__style_color::active_obj) : __colorstyle(__style_color::text), tmp_str_input->second.c_str());
+	dl_data->AddText(frame_draw_pos + pos(4.5, h / 2 - 1 - prew_size.y / 2), is_ready_to_input22->second ? __colorstyle(__style_color::active_obj) : __colorstyle(__style_color::text), tmp_str_input->second.c_str());
+
+	add_element(size(w, h + CalcTextSize(title).y + __style(item_spacing_y)));
 
 	const char* modes[]{ "Toggle", "Hold" };
 	auto const  oldpopuppos = frame_draw_pos + pos(10, 10);
 	pos popup_pos = frame_draw_pos + pos(cursor_updated->second.x - frame_draw_pos.x, cursor_updated->second.y - frame_draw_pos.y);
 	auto const  popup_size = size((CalcTextSize(modes[0]).x + __style(item_spacing_x)) * 1.1, (CalcTextSize(modes[0]).y + CalcTextSize(modes[1]).y + __style(item_spacing_y)) * 1.1);
 
-	if (is_opened_popup->second) {
+	if (is_opened_popup_hotkey->second) {
 
 		this->is_able_to_click = false;
 		//create selection popup
@@ -1475,15 +1528,15 @@ void gui::hotkey(const char* title, int* key, int* mode) {
 
 		if (hovered_mode1 && is_clicked_once()) {
 			*mode = 0;
-			is_opened_popup->second = false;
+			is_opened_popup_hotkey->second = false;
 		}
 		else if (hovered_mode2 && is_clicked_once()) {
 			*mode = 1;
-			is_opened_popup->second = false;
+			is_opened_popup_hotkey->second = false;
 		}
 	}
 
 	if (!hovered && is_holding(0) && !is_hovered(popup_pos, popup_pos + popup_size)) {
-		is_opened_popup->second = false;
+		is_opened_popup_hotkey->second = false;
 	}
 }

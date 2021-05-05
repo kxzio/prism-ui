@@ -5,6 +5,7 @@
 #pragma comment(lib, "d3d9.lib")
 #pragma comment(lib, "d3dx9.lib")
 #include "../gui/gui.h"
+#include "../menu.h"
 
 class device {
 public:
@@ -20,6 +21,8 @@ LRESULT WINAPI WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 
     if (ImGui_ImplWin32_WndProcHandler(hWnd, msg, wParam, lParam))
         return true;
+
+    menu::get().hWnd = hWnd;
 
     switch (msg)
     {

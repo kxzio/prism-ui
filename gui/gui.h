@@ -119,6 +119,7 @@ class gui : public singleton < gui > {
 
 	//gui files, easy to use
 	public:
+	enum AnimationTypes { STATIC, DYNAMIC, INTERP };
 	//start render
 	void go();
 	//render window
@@ -191,7 +192,7 @@ class gui : public singleton < gui > {
 	//mouse pos
 	POINT cursor;
 	//is mouse hovering rect
-	bool is_hovered(pos p1, pos p2);
+	bool is_hovered(pos p1, pos p2, bool popup_status = true);
 	//is left button clicked one time?
 	bool is_clicked_once(int i = 0);
 	//is left button down?
@@ -217,6 +218,7 @@ class gui : public singleton < gui > {
 	//calc sz for element
 	float calc_frame_w();
 	//get frame color
-	ImColor get_frame_color(bool hovered, bool active);
+	ImColor get_frame_color(bool hovered, bool active = false);
+	float lerp_animate(const char* label, const char* second_label, bool if_, float Maximal_, float Speed_, int type);
 
 };
